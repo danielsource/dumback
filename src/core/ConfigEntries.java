@@ -1,6 +1,7 @@
 package core;
 
 import java.nio.file.Path;
+import java.util.ArrayList;
 import java.util.List;
 
 public class ConfigEntries {
@@ -17,18 +18,21 @@ public class ConfigEntries {
 			int keepDays,
 			List<Path> dirsToBackup) {
 		this.lastBackup = lastBackup;
-		this.destPath = destPath;
+		this.destPath = destPath == null ? null : destPath.toAbsolutePath();
 		if (freqDays < 0)
 			throw new IllegalArgumentException("'freqDays' must be greater or equal to zero");
 		this.freqDays = freqDays;
 		if (keepDays < 0)
 			throw new IllegalArgumentException("'keepDays' must be greater or equal to zero");
 		this.keepDays = keepDays;
-		this.dirsToBackup = (dirsToBackup == null) ? null : List.copyOf(dirsToBackup);
+
+		List<Path> l = new ArrayList<>(dirsToBackup);
+		l.replaceAll(Path::toAbsolutePath);
+		this.dirsToBackup = l;
 	}
 
 	public ConfigEntries() {
-		this(null, null, 0, 0, null);
+		this(null, null, 0, 0, new ArrayList<>());
 	}
 
 	@Override

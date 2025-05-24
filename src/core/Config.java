@@ -9,34 +9,50 @@ import java.nio.file.Path;
 import java.nio.file.StandardOpenOption;
 import java.time.DateTimeException;
 import java.time.LocalDateTime;
+import java.time.format.DateTimeFormatter;
 import java.util.ArrayList;
 import java.util.List;
 
 class Config {
+	private static final DateTimeFormatter TIMESTAMP_FORMAT = DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm:ss");
+
 	private final Path configPath;
 	private final Log log;
 
 	ConfigEntries cfg = new ConfigEntries();
 
-	Config(Path configPath, Log log) throws IOException {
+	Config(Path configPath, Log log) {
 		this.configPath = configPath;
 		this.log = log;
 
-		if (Files.exists(configPath)) {
-			readConfig();
-		} else {
-			writeConfig();
+		try {
+			if (Files.exists(configPath)) {
+				readConfig();
+			} else {
+				writeConfig();
+			}
+		} catch (IOException e) {
+			String message = String.format("Couldn't read or write '%s': %s",
+					configPath, e.getMessage());
+			log.error("%s", message);
+			throw new RuntimeException(message, e);
 		}
 
 		log.debug("%s", cfg);
-
 	}
 
-	void updateConfig(ConfigEntries cfg) throws IOException {
+	void updateConfig(ConfigEntries cfg) {
 		log.debug("Updating config: '%s' to '%s'", this.cfg, cfg);
 
 		this.cfg = cfg;
-		writeConfig();
+		try {
+			writeConfig();
+		} catch (IOException e) {
+			String message = String.format("Couldn't write '%s': %s",
+					configPath, e.getMessage());
+			log.error("%s", message);
+			throw new RuntimeException(message, e);
+		}
 	}
 
 	private void readConfig() throws IOException {
@@ -122,7 +138,7 @@ class Config {
 	private void writeConfig() throws IOException {
 		log.debug("Writing config: '%s'", configPath);
 
-		String timestamp = LocalDateTime.now().format(Core.TIMESTAMP_FORMAT);
+		String timestamp = LocalDateTime.now().format(TIMESTAMP_FORMAT);
 
 		try (BufferedWriter w = Files.newBufferedWriter(configPath,
 					StandardOpenOption.CREATE)) {
@@ -135,7 +151,7 @@ class Config {
 			w.write(String.format("freqDays=%d%n", cfg.freqDays));
 			w.write(String.format("keepDays=%d%n", cfg.keepDays));
 
-			if (cfg.dirsToBackup != null && !cfg.dirsToBackup.isEmpty()) {
+			if (!cfg.dirsToBackup.isEmpty()) {
 				w.write(String.format("%n[Directories]%n"));
 				for (Path dir : cfg.dirsToBackup)
 					w.write(String.format("%s%n", dir));

@@ -7,24 +7,32 @@ import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.StandardOpenOption;
 import java.time.LocalDateTime;
+import java.time.format.DateTimeFormatter;
 
 class Log {
 	enum Level { DEBUG, INFO, ERROR }
 
 	private static final long TRUNCATION_SIZE = 2*1024*1024;
+	private static final DateTimeFormatter TIMESTAMP_FORMAT = DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm:ss");
 	private static final String INITIAL_MESSAGE = String.format("# Dumback log%n");
 
 	private final Path logPath;
 
-	Log(Path logPath) throws IOException {
+	Log(Path logPath) {
 		this.logPath = logPath;
 
-		if (!Files.exists(logPath))
-			Files.writeString(logPath, INITIAL_MESSAGE, StandardOpenOption.CREATE);
-		else if (Files.size(logPath) > TRUNCATION_SIZE)
-			truncateLog();
-		else
-			Files.writeString(logPath, String.format("%n"), StandardOpenOption.APPEND);
+		try {
+			if (!Files.exists(logPath))
+				Files.writeString(logPath, INITIAL_MESSAGE, StandardOpenOption.CREATE);
+			else if (Files.size(logPath) > TRUNCATION_SIZE)
+				truncateLog();
+		} catch (IOException e) {
+			String timestamp = LocalDateTime.now().format(TIMESTAMP_FORMAT);
+			String message = String.format("Couldn't write '%s': %s",
+					logPath, e.getMessage());
+			System.err.printf("[%s] LOG ERROR - %s%n", timestamp, message, e.getMessage());
+			throw new RuntimeException(message, e);
+		}
 	}
 
 	void debug(String format, Object... args) {
@@ -40,24 +48,26 @@ class Log {
 	}
 
 	private void log(Level level, String format, Object... args) {
-		String timestamp = LocalDateTime.now().format(Core.TIMESTAMP_FORMAT);
-		String message = String.format(format, args);
-		StringWriter sw = new StringWriter(message.length());
+		String timestamp = LocalDateTime.now().format(TIMESTAMP_FORMAT);
+		StringWriter sw = new StringWriter();
 		PrintWriter pw = new PrintWriter(sw);
+		String message;
 
-		pw.printf("[%s] %-5s - %s%n", timestamp, level, message);
+		pw.printf("[%s] %-5s - %s%n", timestamp, level, String.format(format, args));
 
-		if (level == Level.ERROR) {
+		if (level != Level.DEBUG) {
 			if (args.length > 0 && args[args.length-1] instanceof Throwable)
 				((Throwable)args[args.length-1]).printStackTrace(pw);
 			pw.flush();
-			System.err.printf(sw.toString());
+			message = sw.toString();
+			System.err.print(message);
 		} else {
 			pw.flush();
+			message = sw.toString();
 		}
 
 		try {
-			Files.writeString(logPath, sw.toString(), StandardOpenOption.APPEND);
+			Files.writeString(logPath, message, StandardOpenOption.APPEND);
 		} catch (IOException e) {
 			System.err.printf("[%s] LOG ERROR - %s%n",
 					timestamp, e.getMessage());

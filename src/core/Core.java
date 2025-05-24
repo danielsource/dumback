@@ -4,17 +4,14 @@ import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.InvalidPathException;
 import java.nio.file.Path;
-import java.time.DateTimeException;
-import java.time.format.DateTimeFormatter;
+import java.util.Map;
 
 public class Core {
-	public static final DateTimeFormatter TIMESTAMP_FORMAT = DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm:ss");
-
 	private final Path appPath;
 
 	private final Log log;
 	private final Config config;
-	private final Archive archive;
+	private final Backup backup;
 
 	public Core() {
 		String appDirname = ".dumback";
@@ -23,38 +20,44 @@ public class Core {
 			appPath = Path.of(userHome, appDirname);
 			Files.createDirectories(appPath);
 		} catch (InvalidPathException | IOException e) {
-			throw new RuntimeException(
-					String.format("Couldn't create the '%s' directory in '%s'",
-						appDirname, userHome, appDirname), e);
+			String message = String.format("Couldn't create the '%s' directory in '%s': %s",
+					appDirname, userHome, e.getMessage());
+			throw new RuntimeException(message, e);
 		}
 
-		Path logPath = appPath.resolve("dumback.log");
-		try {
-			log = new Log(appPath.resolve(logPath));
-		} catch (IOException e) {
-			throw new RuntimeException(
-					String.format("Error reading or writing to '%s'",
-						logPath), e);
-		}
+		log = new Log(appPath.resolve("dumback.log"));
+		config = new Config(appPath.resolve("dumback.cfg"), log);
+		backup = new Backup(log);
 
-		Path configPath = appPath.resolve("dumback.cfg");
-		try {
-			config = new Config(configPath, log);
-		} catch (IOException e) {
-			throw new RuntimeException(
-					String.format("Error reading or writing to '%s'",
-						configPath), e);
-		}
-
-		archive = null;
+		log.debug("Dumback is initialized");
 	}
 
 	public ConfigEntries getConfig() {
 		return config.cfg;
 	}
 
-	public ConfigEntries updateConfig(ConfigEntries cfg) throws IOException {
+	public ConfigEntries updateConfig(ConfigEntries cfg) {
 		config.updateConfig(cfg);
 		return cfg;
+	}
+
+	public void backup() {
+		try {
+			backup.create(config.cfg.destPath, config.cfg.dirsToBackup);
+			log.info("Backup completed successfully!");
+		} catch (IOException e) {
+			String message = String.format("Couldn't create a new archive in '%s': %s",
+					config.cfg.destPath, e.getMessage());
+			log.error("%s", message);
+		}
+	}
+
+	public Map<Path,Boolean> checkIntegrity() {
+		try {
+			return backup.checkIntegrity(config.cfg.destPath);
+		} catch (IOException e) {
+			log.error("When verifying the integrity: %s", e.getMessage());
+			return null;
+		}
 	}
 }

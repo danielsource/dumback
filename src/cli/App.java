@@ -4,9 +4,11 @@ import core.ConfigEntries;
 import core.Core;
 import core.Date;
 import java.io.IOException;
+import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Map;
 import java.util.NoSuchElementException;
 import java.util.Scanner;
 
@@ -56,26 +58,21 @@ public class App {
 	}
 
 	private static void backupNow() {
+		if (cfg.destPath == null) {
+			System.out.println("\nPlease configure the destination directory.");
+			return;
+		}
+
 		System.out.println("\n==== Starting backup ====\n");
 
-		try {
-			System.out.println("Verifying existing backups...");
-			Thread.sleep(1000);
-			System.out.println("Creating new backup...");
-			Thread.sleep(2000);
-
-			cfg = core.updateConfig(new ConfigEntries(
-						new Date(),
-						cfg.destPath,
-						cfg.freqDays,
-						cfg.keepDays,
-						cfg.dirsToBackup
-						));
-
-			System.out.println("Backup completed successfully!");
-		} catch (IOException | InterruptedException e) {
-			System.out.println("Backup failed: " + e.getMessage());
-		}
+		core.backup();
+		cfg = core.updateConfig(new ConfigEntries(
+					new Date(),
+					cfg.destPath,
+					cfg.freqDays,
+					cfg.keepDays,
+					cfg.dirsToBackup
+					));
 	}
 
 	private static void configure() {
@@ -87,29 +84,30 @@ public class App {
 		String destPath = sc.nextLine();
 
 		System.out.printf("%nAutomatic backup frequency: %s%n",
-				(cfg.freqDays == 0) ? "Disabled" : cfg.freqDays + " days");
+				(cfg.freqDays == 0) ? "Disabled" : cfg.freqDays + " day(s)");
 		System.out.print("Enter new frequency (0 for manual only): ");
 		int freqDays = sc.nextInt();
 
 		System.out.printf("%nKeep backups: %s%n",
-				(cfg.keepDays == 0) ? "Keep forever" : cfg.keepDays + " days");
+				(cfg.keepDays == 0) ? "Keep forever" : cfg.keepDays + " day(s)");
 		System.out.print("Enter new retention days (0 for forever): ");
 		int keepDays = sc.nextInt();
 		sc.nextLine();
 
-		System.out.println("\nCurrent directories:");
-		if (cfg.dirsToBackup != null)
+		if (cfg.dirsToBackup.isEmpty()) {
+			System.out.println("\nEnter directories to backup (one directory per line, blank to finish):");
+		} else {
+			System.out.println("\nCurrent directories:");
 			for (Path dir : cfg.dirsToBackup)
 				System.out.println(dir);
-		System.out.println("\nReplace the current ones (one directory per line, blank to finish):");
-		List<Path> dirs = null;
+			System.out.println("\nReplace the current ones (one directory per line, blank to finish):");
+		}
+
+		List<Path> dirs = new ArrayList<>();
 		String dir = sc.nextLine();
-		if (!dir.isEmpty()) {
-			dirs = new ArrayList<>();
-			do {
-				dirs.add(Path.of(dir));
-				dir = sc.nextLine();
-			} while (!dir.isEmpty());
+		while (!dir.isEmpty()) {
+			dirs.add(Path.of(dir));
+			dir = sc.nextLine();
 		}
 
 		try {
@@ -119,24 +117,27 @@ public class App {
 						freqDays,
 						keepDays,
 						dirs));
-			System.out.println("Configuration saved!");
 
-			if (freqDays > 0) {
+			if (freqDays > 0)
 				System.out.printf(
 						"%nAutomatic backups enabled - will run every %d days.%n",
 						freqDays);
-			}
 		} catch (IllegalArgumentException e) {
-			System.out.println("Invalid setting: " + e.getMessage());
-		} catch (IOException e) {
-			System.out.println("Error saving configuration: " + e.getMessage());
+			System.out.println("Invalid setting, try again: " + e.getMessage());
 		}
 	}
 
 	private static void checkStatus() {
+		if (cfg.destPath == null) {
+			System.out.println("\nPlease configure the destination directory.");
+			return;
+		}
+
 		System.out.println("\n==== Backup status ====\n");
 		System.out.printf("Last backup: %s%n",
 				(cfg.lastBackup != null) ? cfg.lastBackup : "Never");
+
+		System.out.printf("Destination: %s%n", cfg.destPath);
 
 		if (cfg.freqDays > 0) {
 			System.out.printf("Automatic backups: Every %d days%n", cfg.freqDays);
@@ -147,17 +148,22 @@ public class App {
 		}
 
 		System.out.println("\nDirectories to backup:");
-		if (cfg.dirsToBackup != null && !cfg.dirsToBackup.isEmpty())
+		if (!cfg.dirsToBackup.isEmpty())
 			for (Path dir : cfg.dirsToBackup)
 				System.out.println(dir);
 		else
-			System.out.println("None configured");
-		System.out.println();
+			System.out.println("(None configured)");
 
-		try {
-			System.out.println("Verifying existing backups...");
-			Thread.sleep(1000);
-		} catch (InterruptedException e) {}
+		if (!Files.exists(cfg.destPath))
+			return;
+
+		System.out.println("\nVerifying existing backups...");
+		Map<Path,Boolean> result = core.checkIntegrity();
+		if (result != null)
+			result.forEach((bak, isValid) -> {
+				System.out.printf("%s: %s\n",
+						bak, isValid ? "ok" : "INVALID!");
+			});
 	}
 
 	public static void main(String args[]) {
@@ -169,9 +175,9 @@ public class App {
 
 		try {
 			runCommandLine();
-		} catch (NoSuchElementException e) {
-			System.err.printf("%nFatal error: %s%n", e.getClass().getSimpleName());
-			System.exit(2);
+		} catch (NoSuchElementException e) { /* probably CTRL-D */
+			System.err.printf("%nExiting: %s%n", e.getClass().getSimpleName());
+			System.exit(0);
 		} catch (RuntimeException e) {
 			e.printStackTrace();
 			System.err.printf("Fatal error: %s%n", e.getMessage());
