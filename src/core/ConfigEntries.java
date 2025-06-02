@@ -18,7 +18,7 @@ public class ConfigEntries {
 			int keepDays,
 			List<Path> dirsToBackup) {
 		this.lastBackup = lastBackup;
-		this.destPath = destPath == null ? null : destPath.toAbsolutePath();
+		this.destPath = destPath == null ? null : destPath.normalize().toAbsolutePath();
 		if (freqDays < 0)
 			throw new IllegalArgumentException("'freqDays' must be greater or equal to zero");
 		this.freqDays = freqDays;
@@ -27,6 +27,7 @@ public class ConfigEntries {
 		this.keepDays = keepDays;
 
 		List<Path> l = new ArrayList<>(dirsToBackup);
+		l.replaceAll(Path::normalize);
 		l.replaceAll(Path::toAbsolutePath);
 		this.dirsToBackup = l;
 	}

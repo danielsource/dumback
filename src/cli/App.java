@@ -100,14 +100,16 @@ public class App {
 			System.out.println("\nCurrent directories:");
 			for (Path dir : cfg.dirsToBackup)
 				System.out.println(dir);
-			System.out.println("\nReplace the current ones (one directory per line, blank to finish):");
+			System.out.println("\nReplace the current ones (one directory per line, blank to finish/SKIP):");
 		}
 
 		List<Path> dirs = new ArrayList<>();
 		String dir = sc.nextLine();
-		while (!dir.isEmpty()) {
-			dirs.add(Path.of(dir));
-			dir = sc.nextLine();
+		if (!dir.isEmpty()) {
+			do {
+				dirs.add(Path.of(dir));
+				dir = sc.nextLine();
+			} while (!dir.isEmpty());
 		}
 
 		try {

@@ -76,9 +76,9 @@ class Config {
 				}
 
 				line = line.trim();
-				if (line.isEmpty() || line.startsWith("#")) {
+				if (line.isEmpty() || line.startsWith("#"))
 					continue;
-				} else if (line.equals("[Directories]")) {
+				if (line.equals("[Directories]")) {
 					readDirs = true;
 					continue;
 				}
@@ -141,7 +141,8 @@ class Config {
 		String timestamp = LocalDateTime.now().format(TIMESTAMP_FORMAT);
 
 		try (BufferedWriter w = Files.newBufferedWriter(configPath,
-					StandardOpenOption.CREATE)) {
+					StandardOpenOption.CREATE,
+					StandardOpenOption.TRUNCATE_EXISTING)) {
 			w.write(String.format("# Last edited automatically: %s%n", timestamp));
 
 			if (cfg.lastBackup != null)

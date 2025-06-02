@@ -76,7 +76,7 @@ class Backup {
 					MessageDigest md = MessageDigest.getInstance("MD5");
 					byte digest[] = md.digest(Files.readAllBytes(zip));
 					String sum = byteToHex(digest).toString();
-					log.debug("md5sum: %s %s %s", dest, sum, parts[0]);
+					log.debug("md5sum: %s %s %s", zipName, sum, parts[0]);
 					boolean valid = parts[0].equals(sum);
 					results.put(zip, valid);
 				} catch (IOException e) {
@@ -97,7 +97,10 @@ class Backup {
 		Files.walk(dir).forEach(path -> {
 			try {
 				if (!Files.isDirectory(path)) {
-					String f = dir.relativize(path).toString();
+					Path par = dir.getParent();
+					if (par == null)
+						par = dir;
+					String f = par.relativize(path).toString();
 					log.debug("  %s", f);
 					zos.putNextEntry(new ZipEntry(f));
 					Files.copy(path, zos);
