@@ -97,7 +97,7 @@ public class Core {
 	public Map<Path,Boolean> checkIntegrity() {
 		ConfigEntries cfg = getConfig();
 
-		if (!Files.exists(cfg.destPath))
+		if (cfg.destPath == null || !Files.exists(cfg.destPath))
 			return null;
 
 		try {
