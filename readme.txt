@@ -2,7 +2,7 @@
 
 Dumback - graphical tool to automatically backup files
   - Simple GUI with Java Swing
-  - Automatic scheduled backups
+  - Automatic scheduled ZIP archives
   - Checksum verification (MD5)
 
 Dumback stores its information in
@@ -14,5 +14,6 @@ Build prerequisites:
 
 Example of building and running:
   $ javac -d out -sourcepath src src/gui/App.java
+  $ cp src/icon.png src/*.properties out
   $ jar cfm dumback.jar src/MANIFEST.MF -C out .
-  $ java -jar dumback.jar
+  $ java -Duser.language=pt -jar dumback.jar

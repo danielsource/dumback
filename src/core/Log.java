@@ -8,6 +8,7 @@ import java.nio.file.Path;
 import java.nio.file.StandardOpenOption;
 import java.time.LocalDateTime;
 import java.time.format.DateTimeFormatter;
+import static core.I18n.i18n;
 
 class Log {
 	enum Level { DEBUG, INFO, ERROR }
@@ -28,7 +29,7 @@ class Log {
 				truncateLog();
 		} catch (IOException e) {
 			String timestamp = LocalDateTime.now().format(TIMESTAMP_FORMAT);
-			String message = String.format("Couldn't write '%s': %s",
+			String message = i18n("error.Couldnt_write",
 					logPath, e.getMessage());
 			System.err.printf("[%s] LOG ERROR - %s%n", timestamp, message, e.getMessage());
 			throw new RuntimeException(message, e);
@@ -55,7 +56,7 @@ class Log {
 
 		pw.printf("[%s] %-5s - %s%n", timestamp, level, String.format(format, args));
 
-		if (level != Level.DEBUG) {
+		if (level == Level.ERROR) {
 			if (args.length > 0 && args[args.length-1] instanceof Throwable)
 				((Throwable)args[args.length-1]).printStackTrace(pw);
 			pw.flush();
@@ -64,6 +65,8 @@ class Log {
 		} else {
 			pw.flush();
 			message = sw.toString();
+			if (level == Level.INFO)
+				System.out.print(message);
 		}
 
 		try {
@@ -77,7 +80,7 @@ class Log {
 	private void truncateLog() throws IOException {
 		String content = Files.readString(logPath);
 		int keep = (int)Math.min(content.length(), TRUNCATION_SIZE / 2);
-		int start = content.lastIndexOf("\n", content.length() - keep);
+		int start = content.lastIndexOf('\n', content.length() - keep);
 
 		String truncated = INITIAL_MESSAGE;
 		if (start == -1)

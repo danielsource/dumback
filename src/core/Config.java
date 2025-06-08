@@ -12,6 +12,7 @@ import java.time.LocalDateTime;
 import java.time.format.DateTimeFormatter;
 import java.util.ArrayList;
 import java.util.List;
+import static core.I18n.i18n;
 
 class Config {
 	private static final DateTimeFormatter TIMESTAMP_FORMAT = DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm:ss");
@@ -32,7 +33,7 @@ class Config {
 				writeConfig();
 			}
 		} catch (IOException e) {
-			String message = String.format("Couldn't read or write '%s': %s",
+			String message = i18n("error.Couldnt_read_or_write",
 					configPath, e.getMessage());
 			log.error("%s", message);
 			throw new RuntimeException(message, e);
@@ -48,7 +49,7 @@ class Config {
 		try {
 			writeConfig();
 		} catch (IOException e) {
-			String message = String.format("Couldn't write '%s': %s",
+			String message = i18n("error.Couldnt_write",
 					configPath, e.getMessage());
 			log.error("%s", message);
 			throw new RuntimeException(message, e);
@@ -85,7 +86,7 @@ class Config {
 
 				entry = line.split("=", 2);
 				if (entry.length != 2) {
-					log.error("Invalid entry with no value: '%s'", entry[0]);
+					log.error(i18n("error.Invalid_cfg_no_value"), entry[0]);
 					continue;
 				}
 				entry[0] = entry[0].trim();
@@ -96,32 +97,32 @@ class Config {
 					try {
 						lastBackup = new Date(entry[1]);
 					} catch (DateTimeException e) {
-						log.error("Invalid date: %s=%s", entry[0], entry[1]);
+						log.error(i18n("error.Invalid_cfg_date"), entry[0], entry[1]);
 					}
 					break;
 				case "destPath":
 					try {
 						destPath = Path.of(entry[1]);
 					} catch (InvalidPathException e) {
-						log.error("Invalid path: %s=%s", entry[0], entry[1]);
+						log.error(i18n("error.Invalid_cfg_path"), entry[0], entry[1]);
 					}
 					break;
 				case "freqDays":
 					try {
 						freqDays = Integer.parseInt(entry[1]);
 					} catch (NumberFormatException e) {
-						log.error("Invalid number: %s=%s", entry[0], entry[1]);
+						log.error(i18n("error.Invalid_cfg_number"), entry[0], entry[1]);
 					}
 					break;
 				case "keepDays":
 					try {
 						keepDays = Integer.parseInt(entry[1]);
 					} catch (NumberFormatException e) {
-						log.error("Invalid number: %s=%s", entry[0], entry[1]);
+						log.error("error.Invalid_cfg_number", entry[0], entry[1]);
 					}
 					break;
 				default:
-					log.error("Unknown entry: %s=%s", entry[0], entry[1]);
+					log.error(i18n("error.Unknown_cfg"), entry[0], entry[1]);
 				}
 			}
 		}
@@ -129,7 +130,7 @@ class Config {
 		try {
 			cfg = new ConfigEntries(lastBackup, destPath, freqDays, keepDays, dirsToBackup);
 		} catch (IllegalArgumentException e) {
-			log.error("Discarding invalid setting: %s", e.getMessage());
+			log.error(i18n("error.Discarding_invalid_cfg"), e.getMessage());
 		}
 
 		log.debug("END Reading config");

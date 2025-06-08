@@ -4,7 +4,6 @@ import core.ConfigEntries;
 import core.Core;
 import core.Date;
 import java.io.IOException;
-import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.ArrayList;
 import java.util.List;
@@ -14,7 +13,6 @@ import java.util.Scanner;
 
 public class App {
 	private static Core core;
-	private static ConfigEntries cfg;
 	private static Scanner sc;
 
 	private static void displayMenu() {
@@ -27,8 +25,6 @@ public class App {
 	}
 
 	private static void runCommandLine() {
-		core = new Core();
-		cfg = core.getConfig();
 		sc = new Scanner(System.in);
 
 		while (true) {
@@ -58,24 +54,14 @@ public class App {
 	}
 
 	private static void backupNow() {
-		if (cfg.destPath == null) {
-			System.out.println("\nPlease configure the destination directory.");
-			return;
-		}
-
 		System.out.println("\n==== Starting backup ====\n");
 
 		core.backup();
-		cfg = core.updateConfig(new ConfigEntries(
-					new Date(),
-					cfg.destPath,
-					cfg.freqDays,
-					cfg.keepDays,
-					cfg.dirsToBackup
-					));
 	}
 
 	private static void configure() {
+		ConfigEntries cfg = core.getConfig();
+
 		System.out.println("\n==== Backup configuration ====");
 
 		System.out.printf("%nCurrent destination: %s%n",
@@ -110,26 +96,25 @@ public class App {
 				dirs.add(Path.of(dir));
 				dir = sc.nextLine();
 			} while (!dir.isEmpty());
+		} else {
+			dirs = cfg.dirsToBackup;
 		}
 
 		try {
-			cfg = core.updateConfig(new ConfigEntries(
+			core.updateConfig(new ConfigEntries(
 						cfg.lastBackup,
 						destPath.isEmpty() ? cfg.destPath : Path.of(destPath),
 						freqDays,
 						keepDays,
 						dirs));
-
-			if (freqDays > 0)
-				System.out.printf(
-						"%nAutomatic backups enabled - will run every %d days.%n",
-						freqDays);
 		} catch (IllegalArgumentException e) {
 			System.out.println("Invalid setting, try again: " + e.getMessage());
 		}
 	}
 
 	private static void checkStatus() {
+		ConfigEntries cfg = core.getConfig();
+
 		if (cfg.destPath == null) {
 			System.out.println("\nPlease configure the destination directory.");
 			return;
@@ -156,14 +141,11 @@ public class App {
 		else
 			System.out.println("(None configured)");
 
-		if (!Files.exists(cfg.destPath))
-			return;
-
 		System.out.println("\nVerifying existing backups...");
 		Map<Path,Boolean> result = core.checkIntegrity();
 		if (result != null)
 			result.forEach((bak, isValid) -> {
-				System.out.printf("%s: %s\n",
+				System.out.printf("%s: %s%n",
 						bak, isValid ? "ok" : "INVALID!");
 			});
 	}
@@ -172,18 +154,21 @@ public class App {
 		if (args.length > 0) {
 			System.err.println("Usage: This program does not accept arguments.");
 			System.err.println("About: https://github.com/danielsource/dumback.git");
-			System.exit(1);
+			System.exit(2);
+		}
+
+		try {
+			core = new Core();
+		} catch (RuntimeException e) {
+			e.printStackTrace();
+			System.err.printf("Fatal error on initialization: %s%n", e.getMessage());
+			System.exit(2);
 		}
 
 		try {
 			runCommandLine();
-		} catch (NoSuchElementException e) { /* probably CTRL-D */
-			System.err.printf("%nExiting: %s%n", e.getClass().getSimpleName());
-			System.exit(0);
 		} catch (RuntimeException e) {
-			e.printStackTrace();
-			System.err.printf("Fatal error: %s%n", e.getMessage());
-			System.exit(2);
+			core.die("%s", e);
 		}
 	}
 }

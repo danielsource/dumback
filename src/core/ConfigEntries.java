@@ -29,7 +29,7 @@ public class ConfigEntries {
 		List<Path> l = new ArrayList<>(dirsToBackup);
 		l.replaceAll(Path::normalize);
 		l.replaceAll(Path::toAbsolutePath);
-		this.dirsToBackup = l;
+		this.dirsToBackup = List.copyOf(l);
 	}
 
 	public ConfigEntries() {

@@ -48,4 +48,8 @@ public class Date {
 	public String toString() {
 		return String.format("%04d%02d%02d", getYear(), getMonth(), getDay());
 	}
+
+	public String toStringFormatted() {
+		return String.format("%04d-%02d-%02d", getYear(), getMonth(), getDay());
+	}
 }

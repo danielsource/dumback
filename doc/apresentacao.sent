@@ -1,0 +1,42 @@
+Dumback - backup simples automático
+
+2. Demonstração
+
+3. Diferenciais
+
+- Backups automáticos em X dias.
+- Retenção de backups por X dias.
+- Verificação de integridade.
+
+4. Desafios técnicos
+
+- Interface gráfica em Swing.
+- Utilização do ZIP no Java.
+
+5. Aplicação no mundo real
+
+- Facilitar o backup de arquivos
+  que muitas vezes é negligenciado.
+
+6. Encerramento
+   (Recomendação de trabalhos futuros)
+
+- Opção de iniciar automaticamente
+  (em vez de configurar isso para cada SO diferente).
+\
+- Aplicativo na barra de tarefas (escondido).
+\
+- Não fazer backup quando não há mudanças.
+\
+- Integrar com algum serviço de sincronização
+  ou nuvem (ex: Google Drive).
+
+- Deixar a interface mais amigável e compreensível.
+\
+- Reescrever o código almejando mais robustez e
+  melhor tratamento de erros.
+\
+- Multithreading.
+
+FIM.
+Código fonte em github.com/danielsource/dumback
