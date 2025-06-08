@@ -93,31 +93,6 @@ class Backup {
 		return results;
 	}
 
-	private void zipDir(ZipOutputStream zos, Path dir) throws IOException {
-		log.debug("Zipping '%s':", dir);
-		Path root = dir.getFileName();
-		try {
-			Files.walk(dir).forEach(path -> {
-				try {
-					if (!Files.isDirectory(path)) {
-						Path par = dir.getParent();
-						if (par == null)
-							par = dir;
-						String f = par.relativize(path).toString();
-						log.debug("  %s", f);
-						zos.putNextEntry(new ZipEntry(f));
-						Files.copy(path, zos);
-						zos.closeEntry();
-					}
-				} catch (IOException e) {
-					throw new RuntimeException(e);
-				}
-			});
-		} catch (Exception e) {
-			throw new IOException(i18n("error.When_zipping", dir, e), e);
-		}
-	}
-
 	void deleteOld(Path dest, int keepDays) {
 		if (!Files.isDirectory(dest))
 			return;
@@ -168,6 +143,30 @@ class Backup {
 		}
 	}
 
+	private void zipDir(ZipOutputStream zos, Path dir) throws IOException {
+		log.debug("Zipping '%s':", dir);
+		Path root = dir.getFileName();
+		try {
+			Files.walk(dir).forEach(path -> {
+				try {
+					if (!Files.isDirectory(path)) {
+						Path par = dir.getParent();
+						if (par == null)
+							par = dir;
+						String f = par.relativize(path).toString();
+						log.debug("  %s", f);
+						zos.putNextEntry(new ZipEntry(f));
+						Files.copy(path, zos);
+						zos.closeEntry();
+					}
+				} catch (IOException e) {
+					throw new RuntimeException(e);
+				}
+			});
+		} catch (Exception e) {
+			throw new IOException(i18n("error.When_zipping", dir, e), e);
+		}
+	}
 
 	private static byte[] computeMd5(MessageDigest md, Path filePath) throws IOException {
 		byte buffer[] = new byte[1024 * 1024];

@@ -51,7 +51,7 @@ public class Core {
 			return;
 		}
 
-		config.updateConfig(cfg);
+		config.update(cfg);
 		if (cfg.freqDays > 0) {
 			log.info(i18n("info.Auto_backup_enabled"), cfg.freqDays);
 			initAutoBackup();
@@ -82,7 +82,7 @@ public class Core {
 					cfg.destPath, e.getMessage());
 			log.error("%s", message);
 		}
-		config.updateConfig(new ConfigEntries(
+		config.update(new ConfigEntries(
 					new Date(),
 					cfg.destPath,
 					cfg.freqDays,

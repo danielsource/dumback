@@ -28,9 +28,9 @@ class Config {
 
 		try {
 			if (Files.exists(configPath)) {
-				readConfig();
+				read();
 			} else {
-				writeConfig();
+				write();
 			}
 		} catch (IOException e) {
 			String message = i18n("error.Couldnt_read_or_write",
@@ -42,12 +42,12 @@ class Config {
 		log.debug("%s", cfg);
 	}
 
-	void updateConfig(ConfigEntries cfg) {
+	void update(ConfigEntries cfg) {
 		log.debug("Updating config: '%s' to '%s'", this.cfg, cfg);
 
 		this.cfg = cfg;
 		try {
-			writeConfig();
+			write();
 		} catch (IOException e) {
 			String message = i18n("error.Couldnt_write",
 					configPath, e.getMessage());
@@ -56,7 +56,7 @@ class Config {
 		}
 	}
 
-	private void readConfig() throws IOException {
+	private void read() throws IOException {
 		log.debug("Reading config: '%s'", configPath);
 
 		String line;
@@ -136,7 +136,7 @@ class Config {
 		log.debug("END Reading config");
 	}
 
-	private void writeConfig() throws IOException {
+	private void write() throws IOException {
 		log.debug("Writing config: '%s'", configPath);
 
 		String timestamp = LocalDateTime.now().format(TIMESTAMP_FORMAT);
