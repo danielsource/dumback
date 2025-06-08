@@ -2,6 +2,7 @@ package gui;
 
 import core.*;
 import java.awt.*;
+import java.awt.event.*;
 import java.io.*;
 import java.nio.file.*;
 import java.util.ArrayList;
@@ -16,7 +17,7 @@ public class App {
 	private static JLabel statusLabel;
 
 	private static void setDarkThemeAndFont() {
-		Font font = new Font("SansSerif", Font.PLAIN, 16);
+		Font font = new Font("SansSerif", Font.PLAIN, 14);
 		Color bg = new Color(40, 40, 40);
 		Color fg = Color.WHITE;
 		Color btn = new Color(85, 85, 85);
@@ -49,12 +50,19 @@ public class App {
 		setDarkThemeAndFont();
 
 		frame = new JFrame("Dumback");
-		frame.setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
+		frame.setDefaultCloseOperation(JFrame.DO_NOTHING_ON_CLOSE);
+		frame.addWindowListener(new WindowAdapter() {
+			@Override
+			public void windowClosing(WindowEvent e) {
+				core.stopAutoBackup();
+				System.exit(0);
+			}
+		});
 		frame.setIconImage(Toolkit.getDefaultToolkit().getImage(App.class.getResource("/icon.png")));
 
 		Dimension screen = Toolkit.getDefaultToolkit().getScreenSize();
-		int width = screen.width / 2;
-		int height = screen.height / 2;
+		int width = (int)(screen.width * 0.6);
+		int height = (int)(screen.height * 0.5);
 		frame.setSize(width, height);
 		frame.setLocationRelativeTo(null);
 
@@ -64,11 +72,11 @@ public class App {
 		JPanel centerPanel = new JPanel(new BorderLayout());
 		JPanel leftPanel = new JPanel();
 		leftPanel.setLayout(new BoxLayout(leftPanel, BoxLayout.Y_AXIS));
-		leftPanel.setPreferredSize(new Dimension(width / 5, height));
+		leftPanel.setPreferredSize(new Dimension((int)(width * 0.20), height));
 
 		JPanel buttonPanel = new JPanel();
 		buttonPanel.setLayout(new BoxLayout(buttonPanel, BoxLayout.Y_AXIS));
-		buttonPanel.setPreferredSize(new Dimension(width / 5, height / 2));
+		buttonPanel.setPreferredSize(new Dimension(Integer.MAX_VALUE, (int)(height * 0.5)));
 
 		JButton btnBackup = new JButton(i18n("btn.Backup_now"));
 		btnBackup.addActionListener(ev -> backupNow());
@@ -79,9 +87,8 @@ public class App {
 		JButton btnStatus = new JButton(i18n("btn.Check_status"));
 		btnStatus.addActionListener(ev -> showStatusDialog());
 
-		Dimension buttonSize = new Dimension(width / 5, height / 12);
 		for (JButton btn : new JButton[]{btnBackup, btnConfig, btnStatus}) {
-			btn.setMaximumSize(buttonSize);
+			btn.setMaximumSize(new Dimension(Integer.MAX_VALUE, btn.getPreferredSize().height));
 			btn.setFocusPainted(false);
 			btn.setMargin(new Insets(0, 0, 0, 0));
 			buttonPanel.add(btn);
@@ -141,9 +148,8 @@ public class App {
 		chooseBtn.addActionListener(ev -> {
 			JFileChooser chooser = new JFileChooser();
 			chooser.setFileSelectionMode(JFileChooser.DIRECTORIES_ONLY);
-			if (chooser.showOpenDialog(dialog) == JFileChooser.APPROVE_OPTION) {
+			if (chooser.showOpenDialog(dialog) == JFileChooser.APPROVE_OPTION)
 				destLabel.setText(chooser.getSelectedFile().getAbsolutePath());
-			}
 		});
 
 		destPanel.add(destLabel, BorderLayout.WEST);

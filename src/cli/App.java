@@ -169,6 +169,8 @@ public class App {
 			runCommandLine();
 		} catch (RuntimeException e) {
 			core.die("%s", e);
+		} finally {
+			core.stopAutoBackup();
 		}
 	}
 }
