@@ -120,6 +120,7 @@ public class Core {
 		backupTimer = new Timer();
 		long initialDelay = 1000;
 		final long daysInMs = 86400000L;
+		final long periodicDelay = cfg.freqDays * daysInMs;
 
 		if (cfg.lastBackup != null) {
 			long daysPassed = cfg.lastBackup.daysBetween(new Date());
@@ -127,7 +128,7 @@ public class Core {
 				initialDelay = (cfg.freqDays - daysPassed) * daysInMs;
 		}
 
-		log.debug("Automatic backup initial delay: %d ms", initialDelay);
+		log.debug("Automatic backup delays: initial: %d ms;  periodic: %d ms", initialDelay, periodicDelay);
 
 		backupTimer.schedule(new TimerTask() {
 			@Override
@@ -150,7 +151,7 @@ public class Core {
 				}
 
 			}
-		}, initialDelay, cfg.freqDays * daysInMs);
+		}, initialDelay, periodicDelay);
 	}
 
 	public void stopAutoBackup() {

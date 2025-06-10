@@ -108,10 +108,12 @@ public class App {
 		centerPanel.add(scrollPane, BorderLayout.CENTER);
 		leftPanel.add(buttonPanel);
 
-		PrintStream out = new PrintStream(new SwingConsoleStream(textPane, Color.WHITE));
-		PrintStream err = new PrintStream(new SwingConsoleStream(textPane, Color.RED));
-		System.setOut(out);
-		System.setErr(err);
+		if (visible) {
+			PrintStream out = new PrintStream(new SwingConsoleStream(textPane, Color.WHITE));
+			PrintStream err = new PrintStream(new SwingConsoleStream(textPane, Color.RED));
+			System.setOut(out);
+			System.setErr(err);
+		}
 
 		frame.setVisible(visible);
 
