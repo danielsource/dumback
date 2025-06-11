@@ -158,7 +158,7 @@ public class App {
 		}
 
 		try {
-			core = new Core();
+			core = new Core(null);
 		} catch (RuntimeException e) {
 			e.printStackTrace();
 			System.err.printf("Fatal error on initialization: %s%n", e.getMessage());

@@ -15,10 +15,11 @@ public class Core {
 	private final Log log;
 	private final Config config;
 	private final Backup backup;
+	private final Runnable runAfterAutoBackup;
 	private volatile boolean isBackupInProgress;
 	private volatile Timer backupTimer;
 
-	public Core() {
+	public Core(Runnable runAfterAutoBackup) {
 		String appDirname = ".dumback";
 		String userHome = System.getProperty("user.home");
 
@@ -35,6 +36,7 @@ public class Core {
 		config = new Config(appPath.resolve("dumback.cfg"), log);
 		backup = new Backup(log);
 
+		this.runAfterAutoBackup = runAfterAutoBackup;
 		isBackupInProgress = false;
 		initAutoBackup();
 
@@ -148,6 +150,9 @@ public class Core {
 						});
 				} catch (Exception e) {
 					log.error(i18n("error.Auto_backup_failed"), e.getMessage());
+				} finally {
+					if (runAfterAutoBackup != null)
+						runAfterAutoBackup.run();
 				}
 
 			}

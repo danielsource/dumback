@@ -15,9 +15,13 @@ public class App {
 	private static Core core;
 	private static JFrame frame;
 	private static JLabel statusLabel;
+	private static Font fontSans;
+	private static Font fontMono;
 
-	private static void setDarkThemeAndFont() {
-		Font font = new Font("SansSerif", Font.PLAIN, 14);
+	private static void setTheme(float fontScale) {
+		fontSans = new Font("SansSerif", Font.PLAIN, (int)(14 * fontScale));
+		fontMono = new Font("Monospaced", Font.PLAIN, (int)(12 * fontScale));
+
 		Color bg = new Color(40, 40, 40);
 		Color fg = Color.WHITE;
 		Color btn = new Color(85, 85, 85);
@@ -27,13 +31,11 @@ public class App {
 			Object key = keys.nextElement();
 			Object value = UIManager.get(key);
 			if (value instanceof Font)
-				UIManager.put(key, font);
+				UIManager.put(key, fontSans);
 			if (value instanceof Color) {
-				if (key.toString().toLowerCase().contains("background") ||
-						key.toString().toLowerCase().contains("selectionForeground"))
+				if (key.toString().toLowerCase().contains("background"))
 					UIManager.put(key, bg);
-				if (key.toString().toLowerCase().contains("foreground") ||
-						key.toString().toLowerCase().contains("selectionBackground"))
+				if (key.toString().toLowerCase().contains("foreground"))
 					UIManager.put(key, fg);
 			}
 		}
@@ -44,10 +46,12 @@ public class App {
 		UIManager.put("TextArea.selectionBackground", fg);
 		UIManager.put("TextPane.selectionForeground", bg);
 		UIManager.put("TextPane.selectionBackground", fg);
+		UIManager.put("TextField.selectionForeground", bg);
+		UIManager.put("TextField.selectionBackground", fg);
 	}
 
-	private static void createAndShowGUI(boolean visible) {
-		setDarkThemeAndFont();
+	private static void createAndShowGUI(float fontScale, boolean visible) {
+		setTheme(fontScale);
 
 		frame = new JFrame("Dumback");
 		frame.setDefaultCloseOperation(JFrame.DO_NOTHING_ON_CLOSE);
@@ -68,15 +72,20 @@ public class App {
 
 		statusLabel = new JLabel(getStatusText(), SwingConstants.LEFT);
 		statusLabel.setOpaque(true);
+		frame.add(statusLabel, BorderLayout.NORTH);
 
 		JPanel centerPanel = new JPanel(new BorderLayout());
+		frame.add(centerPanel, BorderLayout.CENTER);
+
 		JPanel leftPanel = new JPanel();
 		leftPanel.setLayout(new BoxLayout(leftPanel, BoxLayout.Y_AXIS));
-		leftPanel.setPreferredSize(new Dimension((int)(width * 0.20), height));
+		leftPanel.setPreferredSize(new Dimension((int)(width * fontScale * 0.2), height));
+		centerPanel.add(leftPanel, BorderLayout.WEST);
 
 		JPanel buttonPanel = new JPanel();
 		buttonPanel.setLayout(new BoxLayout(buttonPanel, BoxLayout.Y_AXIS));
 		buttonPanel.setPreferredSize(new Dimension(Integer.MAX_VALUE, (int)(height * 0.5)));
+		leftPanel.add(buttonPanel);
 
 		JButton btnBackup = new JButton(i18n("btn.Backup_now"));
 		btnBackup.addActionListener(ev -> backupNow());
@@ -95,18 +104,19 @@ public class App {
 			buttonPanel.add(Box.createVerticalStrut(10));
 		}
 
-		JTextPane textPane = new JTextPane();
+		JTextPane textPane = new JTextPane() {
+			@Override
+			public boolean getScrollableTracksViewportWidth() {
+				return false;
+			}
+		};
 		textPane.setEditable(false);
-		textPane.setFont(new Font("Monospaced", Font.PLAIN, 12));
+		textPane.setFont(fontMono);
+
 		JScrollPane scrollPane = new JScrollPane(textPane,
 				JScrollPane.VERTICAL_SCROLLBAR_ALWAYS,
 				JScrollPane.HORIZONTAL_SCROLLBAR_AS_NEEDED);
-
-		frame.add(statusLabel, BorderLayout.NORTH);
-		frame.add(centerPanel, BorderLayout.CENTER);
-		centerPanel.add(leftPanel, BorderLayout.WEST);
 		centerPanel.add(scrollPane, BorderLayout.CENTER);
-		leftPanel.add(buttonPanel);
 
 		if (visible) {
 			PrintStream out = new PrintStream(new SwingConsoleStream(textPane, Color.WHITE));
@@ -137,15 +147,36 @@ public class App {
 
 		JDialog dialog = new JDialog(frame, i18n("cfg.Configuration"), true);
 		dialog.setLayout(new BorderLayout());
+
+		Dimension screen = Toolkit.getDefaultToolkit().getScreenSize();
+		int width = (int)(screen.width * 0.45);
+		int height = (int)(screen.height * 0.45);
+		dialog.setSize(width, height);
 		dialog.setLocationRelativeTo(frame);
 
-		JPanel formPanel = new JPanel(new GridLayout(0, 2));
+		JPanel mainPanel = new JPanel(new BorderLayout());
+		dialog.add(mainPanel, BorderLayout.CENTER);
 
-		formPanel.add(new JLabel(i18n("cfg.Destination")));
+		JPanel formPanel = new JPanel(new GridBagLayout());
+		GridBagConstraints gbc = new GridBagConstraints();
+		final float formColRatio = 0.1f;
+		gbc.fill = GridBagConstraints.HORIZONTAL;
+		gbc.anchor = GridBagConstraints.WEST;
+		mainPanel.add(formPanel, BorderLayout.NORTH);
+
+		gbc.gridx = 0; gbc.gridy = 0; gbc.weightx = formColRatio;
+		formPanel.add(new JLabel(i18n("cfg.Destination")), gbc);
+
 		JPanel destPanel = new JPanel(new BorderLayout());
+		gbc.gridx = 1; gbc.weightx = 1 - formColRatio;
+		formPanel.add(destPanel, gbc);
+
 		JLabel destLabel = new JLabel(cfg.destPath != null ? cfg.destPath.toString() : "");
+		destPanel.add(destLabel, BorderLayout.WEST);
+
 		JButton chooseBtn = new JButton(UIManager.getIcon("FileView.directoryIcon"));
 		chooseBtn.setToolTipText(i18n("cfg.Choose_directory"));
+		destPanel.add(chooseBtn, BorderLayout.EAST);
 
 		chooseBtn.addActionListener(ev -> {
 			JFileChooser chooser = new JFileChooser();
@@ -154,18 +185,20 @@ public class App {
 				destLabel.setText(chooser.getSelectedFile().getAbsolutePath());
 		});
 
-		destPanel.add(destLabel, BorderLayout.WEST);
-		destPanel.add(Box.createHorizontalStrut(10), BorderLayout.CENTER);
-		destPanel.add(chooseBtn, BorderLayout.EAST);
-		formPanel.add(destPanel);
-
 		JSpinner freqSpinner = new JSpinner(new SpinnerNumberModel(cfg.freqDays, 0, 365, 1));
-		formPanel.add(new JLabel(i18n("cfg.Frequency_days")));
-		formPanel.add(freqSpinner);
+		gbc.gridx = 0; gbc.gridy = 1; gbc.weightx = formColRatio;
+		formPanel.add(new JLabel(i18n("cfg.Frequency_days")), gbc);
+		gbc.gridx = 1; gbc.weightx = 1 - formColRatio;
+		formPanel.add(freqSpinner, gbc);
 
 		JSpinner keepSpinner = new JSpinner(new SpinnerNumberModel(cfg.keepDays, 0, 3650, 1));
-		formPanel.add(new JLabel(i18n("cfg.Keep_days")));
-		formPanel.add(keepSpinner);
+		gbc.gridx = 0; gbc.gridy = 2; gbc.weightx = formColRatio;
+		formPanel.add(new JLabel(i18n("cfg.Keep_days")), gbc);
+		gbc.gridx = 1; gbc.weightx = 1 - formColRatio;
+		formPanel.add(keepSpinner, gbc);
+
+		gbc.gridx = 0; gbc.gridy = 3; gbc.weightx = formColRatio;
+		formPanel.add(Box.createVerticalStrut(10), gbc);
 
 		DefaultListModel<Path> dirsModel = new DefaultListModel<>();
 		cfg.dirsToBackup.forEach(dirsModel::addElement);
@@ -173,8 +206,13 @@ public class App {
 		JScrollPane dirsScroll = new JScrollPane(dirsList);
 
 		JPanel dirsPanel = new JPanel(new BorderLayout());
-		dirsPanel.add(new JLabel(i18n("cfg.Directories")), BorderLayout.NORTH);
+		dirsPanel.add(new JLabel("<html><b>" + i18n("cfg.Directories") + "</b></html>"),
+				BorderLayout.NORTH);
 		dirsPanel.add(dirsScroll, BorderLayout.CENTER);
+		mainPanel.add(dirsPanel, BorderLayout.CENTER);
+
+		JPanel dirsBtnPanel = new JPanel();
+		dirsPanel.add(dirsBtnPanel, BorderLayout.SOUTH);
 
 		JButton addDirBtn = new JButton(UIManager.getIcon("Tree.openIcon"));
 		addDirBtn.setToolTipText(i18n("cfg.Add_directory"));
@@ -184,6 +222,7 @@ public class App {
 			if (chooser.showOpenDialog(dialog) == JFileChooser.APPROVE_OPTION)
 				dirsModel.addElement(chooser.getSelectedFile().toPath());
 		});
+		dirsBtnPanel.add(addDirBtn);
 
 		JButton removeDirBtn = new JButton(UIManager.getIcon("InternalFrame.closeIcon"));
 		removeDirBtn.setToolTipText(i18n("cfg.Remove_directory"));
@@ -192,15 +231,7 @@ public class App {
 			for (int i = indices.length - 1; i >= 0; i--)
 				dirsModel.remove(indices[i]);
 		});
-
-		JPanel dirsBtnPanel = new JPanel();
-		dirsBtnPanel.add(addDirBtn);
 		dirsBtnPanel.add(removeDirBtn);
-		dirsPanel.add(dirsBtnPanel, BorderLayout.SOUTH);
-
-		JPanel mainPanel = new JPanel(new BorderLayout());
-		mainPanel.add(formPanel, BorderLayout.NORTH);
-		mainPanel.add(dirsPanel, BorderLayout.CENTER);
 
 		JButton saveBtn = new JButton(i18n("cfg.Save"));
 		saveBtn.addActionListener(ev -> {
@@ -222,10 +253,8 @@ public class App {
 						i18n("Invalid setting"), JOptionPane.ERROR_MESSAGE);
 			}
 		});
-
-		dialog.add(mainPanel, BorderLayout.CENTER);
 		dialog.add(saveBtn, BorderLayout.SOUTH);
-		dialog.pack();
+
 		dialog.setVisible(true);
 	}
 
@@ -262,14 +291,15 @@ public class App {
 		}
 
 		JTextArea statusArea = new JTextArea(sb.toString());
-		statusArea.setFont(new Font("Monospaced", Font.PLAIN, 12));
+		statusArea.setFont(fontMono);
 		statusArea.setEditable(false);
 		JOptionPane.showMessageDialog(frame, new JScrollPane(statusArea),
 				i18n("status.Status"), JOptionPane.INFORMATION_MESSAGE);
 	}
 
 	private static void updateStatus() {
-		statusLabel.setText(getStatusText());
+		if (statusLabel != null)
+			statusLabel.setText(getStatusText());
 	}
 
 	private static String getStatusText() {
@@ -292,6 +322,17 @@ public class App {
 	public static void main(String args[]) {
 		System.setProperty("awt.useSystemAAFontSettings", "on");
 
+		float fontScale = 1;
+		String fontScaleVar = System.getenv("DUMBACK_FONT_SCALE");
+		if (fontScaleVar != null) {
+			try {
+				fontScale = Float.parseFloat(fontScaleVar);
+			} finally {
+				if (fontScale < 0)
+					fontScale = 1;
+			}
+		}
+
 		boolean visible = true;
 		if (args.length > 1) {
 			exitWithUsage();
@@ -303,7 +344,7 @@ public class App {
 
 
 		try {
-			core = new Core();
+			core = new Core(App::updateStatus);
 		} catch (RuntimeException e) {
 			e.printStackTrace();
 			JOptionPane.showMessageDialog(null, e.getMessage(),
@@ -312,7 +353,7 @@ public class App {
 		}
 
 		try {
-			createAndShowGUI(visible);
+			createAndShowGUI(fontScale, visible);
 		} catch (RuntimeException | ExceptionInInitializerError e) {
 			String message = e.getMessage();
 			if (message == null && e.getCause() != null)
