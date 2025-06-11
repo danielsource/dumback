@@ -95,7 +95,12 @@ public class App {
 			buttonPanel.add(Box.createVerticalStrut(10));
 		}
 
-		JTextPane textPane = new JTextPane();
+		JTextPane textPane = new JTextPane() {
+			@Override
+			public boolean getScrollableTracksViewportWidth() {
+				return false;
+			}
+		};
 		textPane.setEditable(false);
 		textPane.setFont(new Font("Monospaced", Font.PLAIN, 12));
 		JScrollPane scrollPane = new JScrollPane(textPane,
@@ -269,7 +274,8 @@ public class App {
 	}
 
 	private static void updateStatus() {
-		statusLabel.setText(getStatusText());
+		if (statusLabel != null)
+			statusLabel.setText(getStatusText());
 	}
 
 	private static String getStatusText() {
@@ -303,7 +309,7 @@ public class App {
 
 
 		try {
-			core = new Core();
+			core = new Core(App::updateStatus);
 		} catch (RuntimeException e) {
 			e.printStackTrace();
 			JOptionPane.showMessageDialog(null, e.getMessage(),

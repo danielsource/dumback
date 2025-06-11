@@ -71,10 +71,11 @@ class Backup {
 	Map<Path,Boolean> checkIntegrity(Path dest) throws IOException {
 		Map<Path,Boolean> results = new HashMap<>();
 		Files.list(dest)
-			.filter(path -> {
-				String s = path.getFileName().toString();
-				return s.startsWith(ARCHIVE_PREFIX) && s.endsWith(ARCHIVE_SUFFIX);
-			})
+		.filter(path -> {
+			String s = path.getFileName().toString();
+			return s.startsWith(ARCHIVE_PREFIX) && s.endsWith(ARCHIVE_SUFFIX);
+		})
+		.sorted()
 		.forEach(zip -> {
 			String zipName = zip.getFileName().toString();
 			Path md5 = dest.resolve(zipName.replace(".zip", ".md5"));
@@ -104,10 +105,10 @@ class Backup {
 
 		try {
 			Files.list(dest)
-				.filter(path -> {
-					String name = path.getFileName().toString();
-					return name.startsWith(ARCHIVE_PREFIX) && name.endsWith(ARCHIVE_SUFFIX);
-				})
+			.filter(path -> {
+				String name = path.getFileName().toString();
+				return name.startsWith(ARCHIVE_PREFIX) && name.endsWith(ARCHIVE_SUFFIX);
+			})
 			.forEach(path -> {
 				String name = path.getFileName().toString();
 				int ARCHIVE_PREFIXLen = ARCHIVE_PREFIX.length();
@@ -174,7 +175,7 @@ class Backup {
 		try (InputStream is = Files.newInputStream(filePath);
 				DigestInputStream dis = new DigestInputStream(is, md)) {
 			while (dis.read(buffer) != -1);
-				}
+		}
 		return md.digest();
 	}
 
