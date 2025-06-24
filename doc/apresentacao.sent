@@ -12,6 +12,7 @@ Dumback - backup simples automático
 
 - Interface gráfica em Swing.
 - Utilização do ZIP no Java.
+- Backup automatizado.
 
 5. Aplicação no mundo real
 
@@ -19,7 +20,7 @@ Dumback - backup simples automático
   que muitas vezes é negligenciado.
 
 6. Encerramento
-   (Recomendação de trabalhos futuros)
+   (Trabalhos futuros)
 
 - Opção de iniciar automaticamente
   (em vez de configurar isso para cada SO diferente).
@@ -36,7 +37,12 @@ Dumback - backup simples automático
 - Reescrever o código almejando mais robustez e
   melhor tratamento de erros.
 \
+- Fazer backup separados em categorias criadas
+  (ex: um arquivo de backup para fotos, outro para vídeos)
+\
 - Multithreading.
+
+(inspirado em https://apps.gnome.org/DejaDup/)
 
 FIM.
 Código fonte em github.com/danielsource/dumback
